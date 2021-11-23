@@ -35,15 +35,20 @@ Eigen::Matrix4f get_model_matrix(float rotation_angle)
     // TODO: Implement this function
     // Create the model matrix for rotating the triangle around the Z axis.
     // Then return it.
+    Eigen::Vector4f axis;
+    axis << 1 / std::sqrt(2), 1 / std::sqrt(2), 0, 0;
+    auto rotationRad = to_rad(rotation_angle);
 
-    rotation_angle = to_rad(rotation_angle);
+    Eigen::Matrix4f rotate = std::cos(rotationRad) * Eigen::Matrix4f::Identity();
+    rotate += (1 - std::cos(rotationRad)) * axis * axis.transpose();
 
-    Eigen::Matrix4f rotate;
-    rotate << std::cos(rotation_angle), -std::sin(rotation_angle), 0, 0,
-             std::sin(rotation_angle),  std::cos(rotation_angle), 0, 0,
-             0, 0, 1, 0,
-             0, 0, 0, 1;
-
+    Eigen::Matrix4f n;
+    n << 0, -axis.z(), axis.y(), 0,
+         axis.z(), 0, -axis.x(), 0,
+         -axis.y(), axis.x(), 0, 0,
+         0, 0, 0, 0;
+    rotate += std::sin(rotationRad) * n;
+    rotate(3, 3) = 1;
     model = rotate * model;
 
     return model;
@@ -60,11 +65,11 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
     // Create the projection matrix for the given parameters.
     // Then return it.
 
-    eye_fov = to_rad(eye_fov);
+    auto eyeFovRad = to_rad(eye_fov);
 
     Eigen::Matrix4f proj;
-    proj << cot(eye_fov) / 2 /aspect_ratio, 0, 0, 0,
-            0, cot(eye_fov) / 2, 0, 0,
+    proj << cot(eyeFovRad) / 2 /aspect_ratio, 0, 0, 0,
+            0, cot(eyeFovRad) / 2, 0, 0,
             0, 0, -(zFar + zNear) / (zFar - zNear), -1,
             0, 0, -2 * zNear * zFar / (zFar - zNear), 0;
 
