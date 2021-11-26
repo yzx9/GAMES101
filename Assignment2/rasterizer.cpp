@@ -10,7 +10,6 @@
 #include <math.h>
 #include <tuple>
 
-
 rst::pos_buf_id rst::rasterizer::load_positions(const std::vector<Eigen::Vector3f> &positions)
 {
     auto id = get_next_id();
@@ -40,12 +39,12 @@ auto to_vec4(const Eigen::Vector3f& v3, float w = 1.0f)
     return Vector4f(v3.x(), v3.y(), v3.z(), w);
 }
 
-float getCrossProductZ(int x, int y, const Vector3f& v1, const Vector3f& v2)
+float getCrossProductZ(float x, float y, const Vector3f& v1, const Vector3f& v2)
 {
     return (v1.x() - v2.x()) * (v1.y() - y) - (v1.y() - v2.y()) * (v1.x() - x);
 }
 
-static bool insideTriangle(int x, int y, const Vector3f* _v)
+static bool insideTriangle(float x, float y, const Vector3f* _v)
 {
     // TODO : Implement this function to check if the point (x, y) is inside the triangle represented by _v[0], _v[1], _v[2]
     auto p1 = getCrossProductZ(x, y, _v[0], _v[1]);
@@ -133,21 +132,39 @@ void rst::rasterizer::rasterize_triangle(const Triangle& triangle) {
 
     l = std::max(0.0, std::ceil(l - 0.5));
     r = std::min(float(width - 0.5), r);
-
     b = std::max(0.0, std::ceil(b - 0.5));
     t = std::min(float(height - 0.5), t);
 
+    constexpr int MSAA = 3; // Super sample each pixel MSAA * MSAA, set 1 to disable
+    constexpr double offset = 1. / (MSAA + 1);
+
     for (int x = l; x < r; x++) {
         for (int y = b; y < t; y++) {
-            if (insideTriangle(x + 0.5, y + 0.5, triangle.v)) {
-                auto [alpha, beta, gamma] = computeBarycentric2D(x + 0.5, y + 0.5, triangle.v);
-                float w_reciprocal = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
-                float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
-                z_interpolated *= w_reciprocal;
+            // MSAA
+            int visibleCount = 0;
+            float z = 0;
+            for (int xx = 0; xx < MSAA; xx++) {
+                for (int yy = 0; yy < MSAA; yy++) {
+                    auto xxx = x + (xx + 1) * offset;
+                    auto yyy = y + (yy + 1) * offset;
 
-                if (auto& buf = depth_buf[height * y + x]; buf > z_interpolated) {
-                    set_pixel({ float(x), float(y), z_interpolated }, triangle.getColor());
-                    buf = z_interpolated;
+                    if (insideTriangle(xxx, yyy, triangle.v)) {
+                        auto [alpha, beta, gamma] = computeBarycentric2D(xxx, yyy, triangle.v);
+                        float w_reciprocal = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
+                        float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
+                        z_interpolated *= w_reciprocal;
+
+                        z = std::min(z, z_interpolated);
+                        visibleCount++;
+                    }
+                }
+            }
+
+            if (visibleCount) {
+                if (auto& buf = depth_buf[width * y + x]; buf > z) {
+                    buf = z;
+                    auto color = visibleCount * (1. / double(MSAA * MSAA)) * triangle.getColor();
+                    set_pixel({ float(x), float(y), 0 }, color);
                 }
             }
         }
