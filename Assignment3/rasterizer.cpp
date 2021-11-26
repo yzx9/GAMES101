@@ -286,15 +286,15 @@ void rst::rasterizer::rasterize_triangle(const Triangle& triangle, const std::ar
     auto b = std::min({ v[0].y(), v[1].y(), v[2].y() }); // bottom
     auto t = std::max({ v[0].y(), v[1].y(), v[2].y() }); // top
 
-    l = std::max(0.0, std::ceil(l - 0.5)) + 0.5;
+    l = std::max(0.0, std::ceil(l - 0.5));
     r = std::min(float(width - 0.5), r);
 
-    b = std::max(0.0, std::ceil(b - 0.5)) + 0.5;
+    b = std::max(0.0, std::ceil(b - 0.5));
     t = std::min(float(height - 0.5), t);
 
     for (int x = l; x < r; x++) {
         for (int y = b; y < t; y++) {
-            if (insideTriangle(x, y, triangle.v)) {
+            if (insideTriangle(x + 0.5, y + 0.5, triangle.v)) {
                 auto [alpha, beta, gamma] = computeBarycentric2D(x + 0.5, y + 0.5, triangle.v);
 
                 float z = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
