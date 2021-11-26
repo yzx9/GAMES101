@@ -4,12 +4,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.0.31912.275
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{06454499-9FD1-4ACF-925B-D7BE712DF55A}"
-	ProjectSection(SolutionItems) = preProject
-		docs\Assignment0.pdf = docs\Assignment0.pdf
-		docs\Assignment1.pdf = docs\Assignment1.pdf
-		docs\Assignment2.pdf = docs\Assignment2.pdf
-		docs\Assignment3.pdf = docs\Assignment3.pdf
-	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Assignment0", "Assignment0\Assignment0.vcxproj", "{0AD6148E-63DA-49F3-8147-3ABFCC0199AA}"
 EndProject

@@ -8,6 +8,14 @@
 #include "Texture.hpp"
 #include "OBJ_Loader.h"
 
+double cot(double x) {
+    return std::tan(MY_PI / 2 - x);
+}
+
+double to_rad(double angle) {
+    return angle / 180 * MY_PI;
+}
+
 Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 {
     Eigen::Matrix4f view = Eigen::Matrix4f::Identity();
@@ -51,6 +59,15 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float z
 {
     // TODO: Use the same projection matrix from the previous assignments
 
+    auto eyeFovRad = to_rad(eye_fov);
+
+    Eigen::Matrix4f projection;
+    projection << cot(eyeFovRad) / 2 / aspect_ratio, 0, 0, 0,
+        0, cot(eyeFovRad) / 2, 0, 0,
+        0, 0, -(zFar + zNear) / (zFar - zNear), -1,
+        0, 0, -2 * zNear * zFar / (zFar - zNear), 0;
+
+    return projection;
 }
 
 Eigen::Vector3f vertex_shader(const vertex_shader_payload& payload)
@@ -247,10 +264,10 @@ int main(int argc, const char** argv)
 
     std::string filename = "output.png";
     objl::Loader Loader;
-    std::string obj_path = "../models/spot/";
+    std::string obj_path = "./models/spot/";
 
     // Load .obj File
-    bool loadout = Loader.LoadFile("../models/spot/spot_triangulated_good.obj");
+    bool loadout = Loader.LoadFile("./models/spot/spot_triangulated_good.obj");
     for(auto mesh:Loader.LoadedMeshes)
     {
         for(int i=0;i<mesh.Vertices.size();i+=3)
@@ -271,7 +288,7 @@ int main(int argc, const char** argv)
     auto texture_path = "hmap.jpg";
     r.set_texture(Texture(obj_path + texture_path));
 
-    std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = phong_fragment_shader;
+    std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = normal_fragment_shader;
 
     if (argc >= 2)
     {
