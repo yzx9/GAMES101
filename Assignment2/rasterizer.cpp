@@ -131,22 +131,22 @@ void rst::rasterizer::rasterize_triangle(const Triangle& triangle) {
     float b = std::min({ v[0].y(), v[1].y(), v[2].y() }); // bottom
     float t = std::max({ v[0].y(), v[1].y(), v[2].y() }); // top
 
-    l = std::max(0.0, std::ceil(l - 0.5)) + 0.5;
+    l = std::max(0.0, std::ceil(l - 0.5));
     r = std::min(float(width - 0.5), r);
 
-    b = std::max(0.0, std::ceil(b - 0.5)) + 0.5;
+    b = std::max(0.0, std::ceil(b - 0.5));
     t = std::min(float(height - 0.5), t);
 
-    for (auto x = l; x < r; x++) {
-        for (auto y = b; y < t; y++) {
-            if (insideTriangle(x, y, triangle.v)) {
-                auto [alpha, beta, gamma] = computeBarycentric2D(x, y, triangle.v);
+    for (int x = l; x < r; x++) {
+        for (int y = b; y < t; y++) {
+            if (insideTriangle(x + 0.5, y + 0.5, triangle.v)) {
+                auto [alpha, beta, gamma] = computeBarycentric2D(x + 0.5, y + 0.5, triangle.v);
                 float w_reciprocal = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
                 float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
                 z_interpolated *= w_reciprocal;
 
                 if (auto& buf = depth_buf[height * y + x]; buf > z_interpolated) {
-                    set_pixel({ std::floor(x), std::floor(y), z_interpolated }, triangle.getColor());
+                    set_pixel({ float(x), float(y), z_interpolated }, triangle.getColor());
                     buf = z_interpolated;
                 }
             }
