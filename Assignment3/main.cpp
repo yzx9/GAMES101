@@ -307,13 +307,16 @@ int main(int argc, const char** argv)
 
     rst::rasterizer r(700, 700);
 
-    auto texture_path = "hmap.jpg";
-    r.set_texture(Texture(obj_path + texture_path));
+    std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader;
 
-    std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = texture_fragment_shader;
-    texture_path = "spot_texture.png";
-    r.set_texture(Texture(obj_path + texture_path));
-
+    enum class SelectedShader {
+        TextureShader,
+        NormalShader,
+        PhongShader,
+        BumpShader,
+        DisplacementShader
+    };
+    SelectedShader shader = SelectedShader::TextureShader;
     if (argc >= 2)
     {
         command_line = true;
@@ -321,32 +324,56 @@ int main(int argc, const char** argv)
 
         if (argc == 3 && std::string(argv[2]) == "texture")
         {
-            std::cout << "Rasterizing using the texture shader\n";
-            active_shader = texture_fragment_shader;
-            texture_path = "spot_texture.png";
-            r.set_texture(Texture(obj_path + texture_path));
+            shader = SelectedShader::TextureShader;
         }
         else if (argc == 3 && std::string(argv[2]) == "normal")
         {
-            std::cout << "Rasterizing using the normal shader\n";
-            active_shader = normal_fragment_shader;
+            shader = SelectedShader::NormalShader;
         }
         else if (argc == 3 && std::string(argv[2]) == "phong")
         {
-            std::cout << "Rasterizing using the phong shader\n";
-            active_shader = phong_fragment_shader;
+            shader = SelectedShader::PhongShader;
         }
         else if (argc == 3 && std::string(argv[2]) == "bump")
         {
-            std::cout << "Rasterizing using the bump shader\n";
-            active_shader = bump_fragment_shader;
+            shader = SelectedShader::BumpShader;
         }
         else if (argc == 3 && std::string(argv[2]) == "displacement")
         {
-            std::cout << "Rasterizing using the bump shader\n";
-            active_shader = displacement_fragment_shader;
+            shader = SelectedShader::DisplacementShader;
         }
     }
+
+    auto texture_path = "hmap.jpg";
+    switch (shader)
+    {
+    case SelectedShader::TextureShader:
+        std::cout << "Rasterizing using the texture shader\n";
+        active_shader = texture_fragment_shader;
+        texture_path = "spot_texture.png";
+        break;
+
+    case SelectedShader::NormalShader:
+        std::cout << "Rasterizing using the normal shader\n";
+        active_shader = normal_fragment_shader;
+        break;
+
+    case SelectedShader::PhongShader:
+        std::cout << "Rasterizing using the phong shader\n";
+        active_shader = phong_fragment_shader;
+        break;
+
+    case SelectedShader::BumpShader:
+        std::cout << "Rasterizing using the bump shader\n";
+        active_shader = bump_fragment_shader;
+        break;
+
+    case SelectedShader::DisplacementShader:
+        std::cout << "Rasterizing using the bump shader\n";
+        active_shader = displacement_fragment_shader;
+        break;
+    }
+    r.set_texture(Texture(obj_path + texture_path));
 
     Eigen::Vector3f eye_pos = {0,0,10};
 
