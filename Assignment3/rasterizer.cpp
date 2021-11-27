@@ -288,7 +288,6 @@ void rst::rasterizer::rasterize_triangle(const Triangle& triangle, const std::ar
 
     l = std::max(0.0, std::ceil(l - 0.5));
     r = std::min(float(width - 0.5), r);
-
     b = std::max(0.0, std::ceil(b - 0.5));
     t = std::min(float(height - 0.5), t);
 
@@ -297,6 +296,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& triangle, const std::ar
             if (insideTriangle(x + 0.5, y + 0.5, triangle.v)) {
                 auto [alpha, beta, gamma] = computeBarycentric2D(x + 0.5, y + 0.5, triangle.v);
 
+                // 投影后重心坐标会变化，因此zp需要矫正，不能直接通过重心坐标插值
                 float z = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
                 float zp = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
                 zp *= z;

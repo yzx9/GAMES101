@@ -159,7 +159,16 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)
     {
         // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
         // components are. Then, accumulate that result on the *result_color* object.
+        auto light_vec = light.position - point;
+        auto light_dir = light_vec.normalized();
+        auto view_dir = (eye_pos - point).normalized();
+        auto half_vec = (view_dir + light_dir).normalized();
+        auto intensity = light.intensity / light_vec.dot(light_vec);
+        auto normal_normalized = normal.normalized();
         
+        result_color += ka.cwiseProduct(amb_light_intensity);
+        result_color += kd.cwiseProduct(intensity) * std::max(0.f, normal_normalized.dot(light_dir));
+        result_color += ks.cwiseProduct(intensity) * std::pow(std::max(0.f, normal_normalized.dot(half_vec)), p);
     }
 
     return result_color * 255.f;
@@ -259,7 +268,7 @@ int main(int argc, const char** argv)
 {
     std::vector<Triangle*> TriangleList;
 
-    float angle = 140.0;
+    float angle = 280.;
     bool command_line = false;
 
     std::string filename = "output.png";
@@ -288,7 +297,7 @@ int main(int argc, const char** argv)
     auto texture_path = "hmap.jpg";
     r.set_texture(Texture(obj_path + texture_path));
 
-    std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = normal_fragment_shader;
+    std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = phong_fragment_shader;
 
     if (argc >= 2)
     {
