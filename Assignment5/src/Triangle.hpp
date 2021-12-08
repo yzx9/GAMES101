@@ -4,6 +4,8 @@
 
 #include <cstring>
 
+constexpr float EPSILON = 1e-6;
+
 bool rayTriangleIntersect(const Vector3f& v0, const Vector3f& v1, const Vector3f& v2, const Vector3f& orig,
                           const Vector3f& dir, float& tnear, float& u, float& v)
 {
@@ -22,7 +24,7 @@ bool rayTriangleIntersect(const Vector3f& v0, const Vector3f& v1, const Vector3f
     u = k * dotProduct(s1, s);
     v = k * dotProduct(s2, dir);
 
-    return u > 0 && v > 0 && u + v < 1 && tnear > 0;
+    return u > 0 && v > 0 && 1-u-v > -EPSILON && tnear > 0;
 }
 
 class MeshTriangle : public Object
