@@ -60,6 +60,9 @@
     <ClInclude Include="src\Vector.hpp">
       <Filter>源文件</Filter>
     </ClInclude>
+    <ClInclude Include="src\SafeQueue.hpp">
+      <Filter>源文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\BVH.cpp">
@@ -75,6 +78,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\Vector.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ThreadPool.hpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

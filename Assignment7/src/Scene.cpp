@@ -74,7 +74,8 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
             return lightDirect;
         }
 
-        lightDirect += hit.m->getEmission();
+        auto dirEyeToLight = hit.coords - ray.origin;
+        lightDirect += hit.m->getEmission() / dotProduct(dirEyeToLight, dirEyeToLight) * 15000;
     }
 
     Intersection hitDirect;

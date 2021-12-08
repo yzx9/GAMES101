@@ -152,6 +152,7 @@
     <ClInclude Include="src\OBJ_Loader.hpp" />
     <ClInclude Include="src\Ray.hpp" />
     <ClInclude Include="src\Renderer.hpp" />
+    <ClInclude Include="src\SafeQueue.hpp" />
     <ClInclude Include="src\Scene.hpp" />
     <ClInclude Include="src\Sphere.hpp" />
     <ClInclude Include="src\Triangle.hpp" />
@@ -163,6 +164,7 @@
     <ClCompile Include="src\Renderer.cpp" />
     <ClCompile Include="src\Scene.cpp" />
     <ClCompile Include="src\Vector.cpp" />
+    <ClCompile Include="src\ThreadPool.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\README.md" />
