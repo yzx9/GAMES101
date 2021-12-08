@@ -1,3 +1,4 @@
+#include <array>
 #include <fstream>
 #include "Vector.hpp"
 #include "Renderer.hpp"
@@ -218,6 +219,15 @@ void Renderer::Render(const Scene& scene)
     // Use this variable as the eye position to start your rays.
     Vector3f eye_pos(0);
     int m = 0;
+    constexpr int MSAA = 4;
+    constexpr float perSample = 1.f / (MSAA + 1);
+    std::array<std::tuple<float, float>, MSAA * MSAA> samples {};
+    for (int i = 0; i < MSAA; i++) {
+        for (int j = 0; j < MSAA; j++) {
+            samples[i * MSAA + j] = { (i + 1) * perSample, (j + 1) * perSample};
+        }
+    }
+
     for (int j = 0; j < scene.height; ++j)
     {
         for (int i = 0; i < scene.width; ++i)
@@ -227,11 +237,15 @@ void Renderer::Render(const Scene& scene)
             // vector that passes through it.
             // Also, don't forget to multiply both of them with the variable *scale*, and
             // x (horizontal) variable with the *imageAspectRatio*  
-            float x = (((i + 0.5) / float(scene.width) * 2) - 1) * scale * imageAspectRatio;
-            float y = (1 - ((j + 0.5) / float(scene.height) * 2)) * scale;
-
-            auto dir = normalize(Vector3f(x, y, -1)); // Don't forget to normalize this direction!
-            framebuffer[m++] = castRay(eye_pos, dir, scene, 0);
+            Vector3f color;
+            for (auto&[offsetX, offsetY] : samples) {
+                float x = (((i + offsetX) / float(scene.width) * 2) - 1) * scale * imageAspectRatio;
+                float y = (1 - ((j + offsetY) / float(scene.height) * 2)) * scale;
+                auto dir = normalize(Vector3f(x, y, -1)); // Don't forget to normalize this direction!
+                auto c = castRay(eye_pos, dir, scene, 0);
+                color += c / (MSAA * MSAA);
+            }
+            framebuffer[m++] = color;
         }
         UpdateProgress(j / (float)scene.height);
     }
