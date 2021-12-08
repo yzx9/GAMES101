@@ -81,11 +81,11 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
     Intersection hitDirect;
     float pdfDirect;
     sampleLight(hitDirect, pdfDirect);
-
-    auto dirDirect = (hitDirect.coords - hit.coords).normalized();
-    auto disDirect = (hitDirect.coords - hit.coords).norm();
-    auto hitShadow = intersect(Ray(hit.coords, dirDirect));
-    if ((hitShadow.coords - hitDirect.coords).norm() < EPSILON) {
+    
+    auto vecDirect = hitDirect.coords - hit.coords;
+    auto dirDirect = vecDirect.normalized();
+    auto disDirect = vecDirect.norm();
+    if (intersect(Ray(hit.coords, dirDirect)).distance - disDirect < EPSILON) {
         lightDirect += hitDirect.emit
             * hit.m->eval(ray.direction, dirDirect, hit.normal)
             * dotProduct(dirDirect, hit.normal)

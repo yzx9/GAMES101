@@ -4,7 +4,7 @@
 
 #include <fstream>
 #include <functional>
-#include <mutex>
+#include <shared_mutex>
 #include <thread>
 #include "Scene.hpp"
 #include "Renderer.hpp"
@@ -35,14 +35,14 @@ void Renderer::Render(const Scene& scene)
     ThreadPool pool(THREAD_LIMIT);
     pool.init();
 
-    std::mutex mutex;
-    std::mutex done;
-    done.lock();
+    //std::mutex mutex;
+    std::shared_mutex done;
     int total = scene.height * scene.width * spp;
     int count = total;
 
     for (uint32_t j = 0; j < scene.height; ++j) {
         for (uint32_t i = 0; i < scene.width; ++i) {
+            done.lock_shared();
             pool.submit([&, i, j, m] {
                 // generate primary ray direction
                 float x = (2 * (i + 0.5) / (float)scene.width - 1) *
@@ -57,15 +57,13 @@ void Renderer::Render(const Scene& scene)
                 }
                 framebuffer[m] = color;
 
-                std::unique_lock<std::mutex> lock(mutex);
-                if (--count == 0) done.unlock();
+                done.unlock_shared();
             });
             m++;
         }
         UpdateProgress(j / (float)scene.height);
     }
-    std::unique_lock<std::mutex> lock(done);
-    pool.shutdown();
+    done.lock();
     UpdateProgress(1.f);
 
     // save framebuffer to file
@@ -80,5 +78,6 @@ void Renderer::Render(const Scene& scene)
         };
         fwrite(color, sizeof(unsigned char), length, fp);
     }
-    fclose(fp);    
+    fclose(fp);
+    pool.shutdown();
 }
