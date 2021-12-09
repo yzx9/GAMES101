@@ -141,4 +141,12 @@ public:
 
         return task_ptr->get_future();
     }
+
+    /// <summary>
+    /// 排队中任务数量
+    /// </summary>
+    /// <returns></returns>
+    int count() {
+        return this->m_queue.size();
+    }
 };

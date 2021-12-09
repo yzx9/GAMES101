@@ -3,8 +3,8 @@
 //
 
 #include <fstream>
-#include <functional>
 #include <shared_mutex>
+#include <chrono>
 #include <thread>
 #include "Scene.hpp"
 #include "Renderer.hpp"
@@ -30,46 +30,46 @@ void Renderer::Render(const Scene& scene)
 
     float scale = tan(deg2rad(scene.fov * 0.5));
     float imageAspectRatio = scene.width / (float)scene.height;
-    int m = 0;
 
     ThreadPool pool(THREAD_LIMIT);
     pool.init();
 
     //std::mutex mutex;
     std::shared_mutex done;
-    int total = scene.height * scene.width * spp;
-    int count = total;
 
     for (uint32_t j = 0; j < scene.height; ++j) {
         for (uint32_t i = 0; i < scene.width; ++i) {
             done.lock_shared();
-            pool.submit([&, i, j, m] {
+            pool.submit([&, i, j] {
                 // generate primary ray direction
-                float x = (2 * (i + 0.5) / (float)scene.width - 1) *
-                    imageAspectRatio * scale;
-                float y = (1 - 2 * (j + 0.5) / (float)scene.height) * scale;
+                float x = (2 * (i + 0.5) / float(scene.width) - 1) * scale * imageAspectRatio;
+                float y = (1 - 2 * (j + 0.5) / float(scene.height)) * scale;
 
                 Vector3f dir = normalize(Vector3f(-x, y, 1));
-
-                Vector3f color{ 0, 0,0 };
+                Vector3f color{ 0, 0, 0 };
                 for (int k = 0; k < spp; k++) {
                     color += scene.castRay(Ray(eye_pos, dir), 0) / spp;
                 }
-                framebuffer[m] = color;
+                framebuffer[j * scene.width + i] = color;
 
                 done.unlock_shared();
             });
-            m++;
         }
-        UpdateProgress(j / (float)scene.height);
     }
-    done.lock();
-    UpdateProgress(1.f);
+    
+    constexpr float TRACE_STAGE_PROGRESS = 0.95;
+    constexpr float STORAGE_STAGE_PROGRESS = 1 - TRACE_STAGE_PROGRESS;
+    int total = scene.height * scene.width;
+    while (!done.try_lock()) {
+        UpdateProgress(TRACE_STAGE_PROGRESS * (total - pool.count() - THREAD_LIMIT) / total);
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+    UpdateProgress(TRACE_STAGE_PROGRESS);
 
     // save framebuffer to file
     FILE* fp = fopen("binary.ppm", "wb");
     (void)fprintf(fp, "P6\n%d %d\n255\n", scene.width, scene.height);
-    for (auto i = 0; i < scene.height * scene.width; ++i) {
+    for (auto i = 0; i < total; ++i) {
         constexpr int length = 3;
         unsigned char color[length]{
             (unsigned char)(255 * std::pow(clamp(0, 1, framebuffer[i].x), 0.6f)),
@@ -77,7 +77,12 @@ void Renderer::Render(const Scene& scene)
             (unsigned char)(255 * std::pow(clamp(0, 1, framebuffer[i].z), 0.6f))
         };
         fwrite(color, sizeof(unsigned char), length, fp);
+
+        if ((i & 0x0400) == 0) {
+            UpdateProgress(TRACE_STAGE_PROGRESS + STORAGE_STAGE_PROGRESS * static_cast<float>(i) / total);
+        }
     }
     fclose(fp);
     pool.shutdown();
+    UpdateProgress(1.f);
 }

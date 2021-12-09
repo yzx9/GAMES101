@@ -37,9 +37,9 @@ void Scene::sampleLight(Intersection &pos, float &pdf) const
 }
 
 bool Scene::trace(
-        const Ray &ray,
-        const std::vector<Object*> &objects,
-        float &tNear, uint32_t &index, Object **hitObject)
+    const Ray& ray,
+    const std::vector<Object*>& objects,
+    float& tNear, uint32_t& index, Object** hitObject)
 {
     *hitObject = nullptr;
     for (uint32_t k = 0; k < objects.size(); ++k) {
@@ -52,7 +52,6 @@ bool Scene::trace(
             index = indexK;
         }
     }
-
 
     return (*hitObject != nullptr);
 }
@@ -74,8 +73,7 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
             return lightDirect;
         }
 
-        auto dirEyeToLight = hit.coords - ray.origin;
-        lightDirect += hit.m->getEmission() / dotProduct(dirEyeToLight, dirEyeToLight) * 15000;
+        lightDirect += hit.m->getEmission();
     }
 
     Intersection hitDirect;
@@ -85,7 +83,7 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
     auto vecDirect = hitDirect.coords - hit.coords;
     auto dirDirect = vecDirect.normalized();
     auto disDirect = vecDirect.norm();
-    if (intersect(Ray(hit.coords, dirDirect)).distance - disDirect < EPSILON) {
+    if (disDirect - intersect(Ray(hit.coords, dirDirect)).distance < EPSILON) {
         lightDirect += hitDirect.emit
             * hit.m->eval(ray.direction, dirDirect, hit.normal)
             * dotProduct(dirDirect, hit.normal)
@@ -100,11 +98,11 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
 
     // Indirect Light
     Vector3f lightIndirect{ 0, 0, 0 };
-    auto dirIndirect = hit.m->sample(ray.direction, hit.normal);
+    auto dirIndirect = hit.m->sample(ray.direction, hit.normal).normalized();
     Ray rayIndirect(hit.coords, dirIndirect);
     lightIndirect += castRay(rayIndirect, depth + 1)
         * hit.m->eval(ray.direction, dirIndirect, hit.normal)
-        * dotProduct(ray.direction, hit.normal)
+        * dotProduct(dirIndirect, hit.normal)
         / hit.m->pdf(ray.direction, dirIndirect, hit.normal)
         / RussianRoulette;
 
