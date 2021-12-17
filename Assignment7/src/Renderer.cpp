@@ -7,14 +7,13 @@
 #include <shared_mutex>
 #include <chrono>
 #include <thread>
+#include <future>
 #include "Scene.hpp"
 #include "Renderer.hpp"
-#include "ThreadPool.hpp"
 
 inline float deg2rad(const float& deg) { return deg * M_PI / 180.0; }
 
 const float EPSILON = 0.00001;
-constexpr int THREAD_LIMIT = 16;
 
 // The main render function. This where we iterate over all pixels in the image,
 // generate primary rays and cast these rays into the scene. The content of the
@@ -31,28 +30,27 @@ void Renderer::Render(const Scene& scene)
     float scale = tan(deg2rad(scene.fov * 0.5));
     float imageAspectRatio = scene.width / (float)scene.height;
 
-    ThreadPool pool(THREAD_LIMIT);
-    pool.init();
-
     int total = scene.height * scene.width;
     std::atomic_int count = total;
 
-    for (uint32_t j = 0; j < scene.height; ++j) {
-        for (uint32_t i = 0; i < scene.width; ++i) {
-            pool.submit([&, i, j] {
-                // generate primary ray direction
-                float x = (2 * (i + 0.5) / float(scene.width) - 1) * scale * imageAspectRatio;
-                float y = (1 - 2 * (j + 0.5) / float(scene.height)) * scale;
+    auto castRay = [&](int i, int j) {
+        // generate primary ray direction
+        auto x = static_cast<float>((2 * (i + 0.5) / static_cast<float>(scene.width) - 1) * scale * imageAspectRatio);
+        auto y = static_cast<float>((1 - 2 * (j + 0.5) / static_cast<float>(scene.height)) * scale);
 
-                Vector3f dir = normalize(Vector3f(-x, y, 1));
-                Vector3f color{ 0, 0, 0 };
-                for (int k = 0; k < spp; k++) {
-                    color += scene.castRay(Ray(eye_pos, dir), 0) / spp;
-                }
-                framebuffer[j * scene.width + i] = color;
+        Vector3f dir = normalize(Vector3f(-x, y, 1));
+        Vector3f color{ 0, 0, 0 };
+        for (int k = 0; k < spp; k++) {
+            color += scene.castRay(Ray(eye_pos, dir), 0) / spp;
+        }
+        framebuffer[j * scene.width + i] = color;
+        count--;
+    };
 
-                count--;
-            });
+    std::vector<std::future<void>> futures;
+    for (int j = 0; j < scene.height; ++j) {
+        for (int i = 0; i < scene.width; ++i) {
+            futures.emplace_back(std::async(std::launch::async, castRay, i, j));
         }
     }
     
@@ -74,6 +72,5 @@ void Renderer::Render(const Scene& scene)
         fwrite(color, sizeof(unsigned char), length, fp);
     }
     fclose(fp);
-    pool.shutdown();
     UpdateProgress(1.f);
 }
