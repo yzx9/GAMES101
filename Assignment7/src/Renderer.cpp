@@ -3,6 +3,7 @@
 //
 
 #include <fstream>
+#include <atomic>
 #include <shared_mutex>
 #include <chrono>
 #include <thread>
@@ -13,7 +14,6 @@
 inline float deg2rad(const float& deg) { return deg * M_PI / 180.0; }
 
 const float EPSILON = 0.00001;
-
 constexpr int THREAD_LIMIT = 16;
 
 // The main render function. This where we iterate over all pixels in the image,
@@ -34,12 +34,11 @@ void Renderer::Render(const Scene& scene)
     ThreadPool pool(THREAD_LIMIT);
     pool.init();
 
-    //std::mutex mutex;
-    std::shared_mutex done;
+    int total = scene.height * scene.width;
+    std::atomic_int count = total;
 
     for (uint32_t j = 0; j < scene.height; ++j) {
         for (uint32_t i = 0; i < scene.width; ++i) {
-            done.lock_shared();
             pool.submit([&, i, j] {
                 // generate primary ray direction
                 float x = (2 * (i + 0.5) / float(scene.width) - 1) * scale * imageAspectRatio;
@@ -52,19 +51,15 @@ void Renderer::Render(const Scene& scene)
                 }
                 framebuffer[j * scene.width + i] = color;
 
-                done.unlock_shared();
+                count--;
             });
         }
     }
     
-    constexpr float TRACE_STAGE_PROGRESS = 0.95;
-    constexpr float STORAGE_STAGE_PROGRESS = 1 - TRACE_STAGE_PROGRESS;
-    int total = scene.height * scene.width;
-    while (!done.try_lock()) {
-        UpdateProgress(TRACE_STAGE_PROGRESS * (total - pool.count() - THREAD_LIMIT) / total);
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    while (count != 0) {
+        UpdateProgress(static_cast<float>(total - count) / total);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
-    UpdateProgress(TRACE_STAGE_PROGRESS);
 
     // save framebuffer to file
     FILE* fp = fopen("binary.ppm", "wb");
@@ -77,10 +72,6 @@ void Renderer::Render(const Scene& scene)
             (unsigned char)(255 * std::pow(clamp(0, 1, framebuffer[i].z), 0.6f))
         };
         fwrite(color, sizeof(unsigned char), length, fp);
-
-        if ((i & 0x0400) == 0) {
-            UpdateProgress(TRACE_STAGE_PROGRESS + STORAGE_STAGE_PROGRESS * static_cast<float>(i) / total);
-        }
     }
     fclose(fp);
     pool.shutdown();
