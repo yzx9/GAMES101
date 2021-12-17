@@ -3,10 +3,7 @@
 //
 
 #include <fstream>
-#include <atomic>
-#include <shared_mutex>
 #include <chrono>
-#include <thread>
 #include <future>
 #include "Scene.hpp"
 #include "Renderer.hpp"
@@ -21,42 +18,44 @@ const float EPSILON = 0.00001;
 void Renderer::Render(const Scene& scene)
 {
     // change the spp value to change sample ammount
-    constexpr int spp = 16;
-    std::cout << "SPP: " << spp << "\n";
+    constexpr auto spp = 16;
+    std::cout << "SPP: " << spp << std::endl;
 
     std::vector<Vector3f> framebuffer(scene.width * scene.height);
     Vector3f eye_pos(278, 273, -800);
 
-    float scale = tan(deg2rad(scene.fov * 0.5));
-    float imageAspectRatio = scene.width / (float)scene.height;
+    auto scale = tan(deg2rad(scene.fov * 0.5));
+    auto imageAspectRatio = scene.width / static_cast<float>(scene.height);
+    auto total = scene.height * scene.width;
 
-    int total = scene.height * scene.width;
-    std::atomic_int count = total;
-
-    auto castRay = [&](int i, int j) {
+    auto calcPixel = [&](int i, int j) {
         // generate primary ray direction
         auto x = static_cast<float>((2 * (i + 0.5) / static_cast<float>(scene.width) - 1) * scale * imageAspectRatio);
         auto y = static_cast<float>((1 - 2 * (j + 0.5) / static_cast<float>(scene.height)) * scale);
 
-        Vector3f dir = normalize(Vector3f(-x, y, 1));
+        auto dir = normalize({ -x, y, 1 });
         Vector3f color{ 0, 0, 0 };
-        for (int k = 0; k < spp; k++) {
+        for (auto k = 0; k < spp; k++) {
             color += scene.castRay(Ray(eye_pos, dir), 0) / spp;
         }
-        framebuffer[j * scene.width + i] = color;
-        count--;
+
+        return color;
     };
 
-    std::vector<std::future<void>> futures;
-    for (int j = 0; j < scene.height; ++j) {
-        for (int i = 0; i < scene.width; ++i) {
-            futures.emplace_back(std::async(std::launch::async, castRay, i, j));
+    std::vector<std::future<Vector3f>> futures;
+    futures.reserve(total);
+    for (auto j = 0; j < scene.height; ++j) {
+        for (auto i = 0; i < scene.width; ++i) {
+            futures.emplace_back(std::async(calcPixel, i, j));
         }
     }
-    
-    while (count != 0) {
-        UpdateProgress(static_cast<float>(total - count) / total);
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    for (auto m = 0; m < total; m++) {
+        framebuffer[m] = futures[m].get();
+
+        if (m % 1024 == 0) {
+            UpdateProgress(static_cast<float>(m) / total);
+        }
     }
 
     // save framebuffer to file
