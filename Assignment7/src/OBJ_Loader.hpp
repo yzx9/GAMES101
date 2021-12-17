@@ -941,7 +941,7 @@ namespace objl
                     }
 
                     // If Vertex is not an interior vertex
-                    float angle = math::AngleBetweenV3(pPrev.Position - pCur.Position, pNext.Position - pCur.Position) * (180 / 3.14159265359);
+                    auto angle = math::AngleBetweenV3(pPrev.Position - pCur.Position, pNext.Position - pCur.Position) * (180 / 3.14159265359f);
                     if (angle <= 0 && angle >= 180)
                         continue;
 

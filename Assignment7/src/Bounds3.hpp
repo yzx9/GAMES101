@@ -15,8 +15,8 @@ class Bounds3
     Vector3f pMin, pMax; // two points to specify the bounding box
     Bounds3()
     {
-        double minNum = std::numeric_limits<double>::lowest();
-        double maxNum = std::numeric_limits<double>::max();
+        constexpr auto minNum = std::numeric_limits<float>::lowest();
+        constexpr auto maxNum = std::numeric_limits<float>::max();
         pMax = Vector3f(minNum, minNum, minNum);
         pMin = Vector3f(maxNum, maxNum, maxNum);
     }

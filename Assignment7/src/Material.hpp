@@ -5,6 +5,7 @@
 #ifndef RAYTRACING_MATERIAL_H
 #define RAYTRACING_MATERIAL_H
 
+#include <limits>
 #include "Vector.hpp"
 
 enum MaterialType { DIFFUSE};
@@ -120,12 +121,11 @@ MaterialType Material::getType(){return m_type;}
 ///Vector3f Material::getColor(){return m_color;}
 Vector3f Material::getEmission() {return m_emission;}
 bool Material::hasEmission() {
-    if (m_emission.norm() > EPSILON) return true;
-    else return false;
+    return m_emission.norm() > std::numeric_limits<float>::epsilon();
 }
 
 Vector3f Material::getColorAt(double u, double v) {
-    return Vector3f();
+    return { 0.0f, 0.0f, 0.0f };
 }
 
 
@@ -139,9 +139,10 @@ Vector3f Material::sample(const Vector3f &wi, const Vector3f &N){
             float r = std::sqrt(1.0f - z * z), phi = 2 * M_PI * x_2;
             Vector3f localRay(r*std::cos(phi), r*std::sin(phi), z);
             return toWorld(localRay, N);
-            
-            break;
         }
+
+        default:
+            return { 0.0f, 0.0f, 0.0f };
     }
 }
 
@@ -156,6 +157,9 @@ float Material::pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N){
                 return 0.0f;
             break;
         }
+
+        default:
+            return 0.0f;
     }
 }
 
@@ -169,10 +173,13 @@ Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &
                 Vector3f diffuse = Kd / M_PI;
                 return diffuse;
             }
-            else
-                return Vector3f(0.0f);
-            break;
+            else {
+                return { 0.0f, 0.0f, 0.0f };
+            }
         }
+
+        default:
+            return { 0.0f, 0.0f, 0.0f };
     }
 }
 

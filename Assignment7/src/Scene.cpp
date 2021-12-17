@@ -2,8 +2,8 @@
 // Created by Göksu Güvendiren on 2019-05-14.
 //
 
+#include <limits>
 #include "Scene.hpp"
-
 
 void Scene::buildBVH() {
     printf(" - Generating BVH...\n\n");
@@ -83,7 +83,7 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
     auto vecDirect = hitDirect.coords - hit.coords;
     auto dirDirect = vecDirect.normalized();
     auto disDirect = vecDirect.norm();
-    if (disDirect - intersect(Ray(hit.coords, dirDirect)).distance < EPSILON) {
+    if (disDirect - intersect(Ray(hit.coords, dirDirect)).distance < std::numeric_limits<float>::epsilon()) {
         lightDirect += hitDirect.emit
             * hit.m->eval(ray.direction, dirDirect, hit.normal)
             * dotProduct(dirDirect, hit.normal)

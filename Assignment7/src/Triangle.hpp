@@ -6,8 +6,9 @@
 #include "OBJ_Loader.hpp"
 #include "Object.hpp"
 #include "Triangle.hpp"
-#include <cassert>
 #include <array>
+#include <cassert>
+#include <limits>
 
 bool rayTriangleIntersect(const Vector3f& v0, const Vector3f& v1,
                           const Vector3f& v2, const Vector3f& orig,
@@ -177,11 +178,10 @@ public:
 
     Vector3f evalDiffuseColor(const Vector2f& st) const
     {
-        float scale = 5;
-        float pattern =
-            (fmodf(st.x * scale, 1) > 0.5) ^ (fmodf(st.y * scale, 1) > 0.5);
-        return lerp(Vector3f(0.815, 0.235, 0.031),
-                    Vector3f(0.937, 0.937, 0.231), pattern);
+        float scale = 5.0f;
+        float pattern = static_cast<float>((fmodf(st.x * scale, 1) > 0.5) ^ (fmodf(st.y * scale, 1) > 0.5));
+        return lerp(Vector3f(0.815f, 0.235f, 0.031f),
+                    Vector3f(0.937f, 0.937f, 0.231f), pattern);
     }
 
     Intersection getIntersection(Ray ray)
@@ -238,7 +238,7 @@ inline Intersection Triangle::getIntersection(Ray ray)
     double u, v, t_tmp = 0;
     Vector3f pvec = crossProduct(ray.direction, e2);
     double det = dotProduct(e1, pvec);
-    if (fabs(det) < EPSILON)
+    if (fabs(det) < std::numeric_limits<float>::epsilon())
         return inter;
 
     double det_inv = 1. / det;
@@ -256,7 +256,7 @@ inline Intersection Triangle::getIntersection(Ray ray)
     if (t_tmp < 0) return inter;
 
     inter.happened = true;
-    inter.coords = ray(t_tmp);
+    inter.coords = ray(static_cast<float>(t_tmp));
     inter.normal = normal;
     inter.distance = t_tmp;
     inter.obj = this;

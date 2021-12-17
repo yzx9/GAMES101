@@ -8,9 +8,7 @@
 #include "Scene.hpp"
 #include "Renderer.hpp"
 
-inline float deg2rad(const float& deg) { return deg * M_PI / 180.0; }
-
-const float EPSILON = 0.00001;
+inline float deg2rad(const float& deg) { return deg * M_PI / 180.0f; }
 
 // The main render function. This where we iterate over all pixels in the image,
 // generate primary rays and cast these rays into the scene. The content of the
@@ -24,7 +22,7 @@ void Renderer::Render(const Scene& scene)
     std::vector<Vector3f> framebuffer(scene.width * scene.height);
     Vector3f eye_pos(278, 273, -800);
 
-    auto scale = tan(deg2rad(scene.fov * 0.5));
+    auto scale = tan(deg2rad(scene.fov * 0.5f));
     auto imageAspectRatio = scene.width / static_cast<float>(scene.height);
     auto total = scene.height * scene.width;
 

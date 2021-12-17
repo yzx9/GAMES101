@@ -12,20 +12,18 @@
 #include "BVH.hpp"
 #include "Ray.hpp"
 
-
 class Scene
 {
 public:
     // setting up options
     int width = 1280;
     int height = 960;
-    double fov = 40;
-    Vector3f backgroundColor = Vector3f(0.235294, 0.67451, 0.843137);
+    float fov = 40;
+    Vector3f backgroundColor = Vector3f(0.235294f, 0.67451f, 0.843137f);
     int maxDepth = 1;
-    float RussianRoulette = 0.8;
+    float RussianRoulette = 0.8f;
 
-    Scene(int w, int h) : width(w), height(h)
-    {}
+    Scene(int w, int h) : width(w), height(h) {}
 
     void Add(Object *object) { objects.push_back(object); }
     void Add(std::unique_ptr<Light> light) { lights.push_back(std::move(light)); }
