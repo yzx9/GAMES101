@@ -18,10 +18,13 @@ public:
     Vector3f operator * (const float &r) const { return Vector3f(x * r, y * r, z * r); }
     Vector3f operator / (const float &r) const { return Vector3f(x / r, y / r, z / r); }
 
-    float norm() {return std::sqrt(x * x + y * y + z * z);}
+    float norm() {
+        return std::sqrt(x * x + y * y + z * z);
+    }
+
     Vector3f normalized() {
-        float n = std::sqrt(x * x + y * y + z * z);
-        return Vector3f(x / n, y / n, z / n);
+        float inv_norm = 1.0f / std::sqrt(x * x + y * y + z * z);
+        return { x * inv_norm, y * inv_norm, z * inv_norm };
     }
 
     Vector3f operator * (const Vector3f &v) const { return Vector3f(x * v.x, y * v.y, z * v.z); }
@@ -47,10 +50,10 @@ public:
                        std::max(p1.z, p2.z));
     }
 };
+
 inline double Vector3f::operator[](int index) const {
     return (&x)[index];
 }
-
 
 class Vector2f
 {
@@ -88,7 +91,5 @@ inline Vector3f crossProduct(const Vector3f &a, const Vector3f &b)
             a.x * b.y - a.y * b.x
     );
 }
-
-
 
 #endif //RAYTRACING_VECTOR_H

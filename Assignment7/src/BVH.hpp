@@ -66,7 +66,4 @@ public:
     }
 };
 
-
-
-
 #endif //RAYTRACING_BVH_H

@@ -27,6 +27,4 @@ public:
     virtual bool hasEmit()=0;
 };
 
-
-
 #endif //RAYTRACING_OBJECT_H

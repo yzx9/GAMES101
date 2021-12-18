@@ -4,11 +4,12 @@
 
 #include <fstream>
 #include <chrono>
+#include <numbers>
 #include <future>
 #include "Scene.hpp"
 #include "Renderer.hpp"
 
-inline float deg2rad(const float& deg) { return deg * M_PI / 180.0f; }
+inline float deg2rad(const float& deg) { return deg * std::numbers::pi / 180.0f; }
 
 // The main render function. This where we iterate over all pixels in the image,
 // generate primary rays and cast these rays into the scene. The content of the
@@ -23,7 +24,7 @@ void Renderer::Render(const Scene& scene)
     Vector3f eye_pos(278, 273, -800);
 
     auto scale = tan(deg2rad(scene.fov * 0.5f));
-    auto imageAspectRatio = scene.width / static_cast<float>(scene.height);
+    auto imageAspectRatio = static_cast<float>(scene.width) / scene.height;
     auto total = scene.height * scene.width;
 
     auto calcPixel = [&](int i, int j) {
@@ -57,14 +58,14 @@ void Renderer::Render(const Scene& scene)
     }
 
     // save framebuffer to file
-    FILE* fp = fopen("binary.ppm", "wb");
+    auto fp = fopen("binary.ppm", "wb");
     (void)fprintf(fp, "P6\n%d %d\n255\n", scene.width, scene.height);
-    for (auto i = 0; i < total; ++i) {
+    for (auto& pixel : framebuffer) {
         constexpr int length = 3;
         unsigned char color[length]{
-            (unsigned char)(255 * std::pow(clamp(0, 1, framebuffer[i].x), 0.6f)),
-            (unsigned char)(255 * std::pow(clamp(0, 1, framebuffer[i].y), 0.6f)),
-            (unsigned char)(255 * std::pow(clamp(0, 1, framebuffer[i].z), 0.6f))
+            static_cast<unsigned char>(255 * std::pow(clamp(0, 1, pixel.x), 0.6f)),
+            static_cast<unsigned char>(255 * std::pow(clamp(0, 1, pixel.y), 0.6f)),
+            static_cast<unsigned char>(255 * std::pow(clamp(0, 1, pixel.z), 0.6f))
         };
         fwrite(color, sizeof(unsigned char), length, fp);
     }

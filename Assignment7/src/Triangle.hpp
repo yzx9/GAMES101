@@ -14,25 +14,24 @@ bool rayTriangleIntersect(const Vector3f& v0, const Vector3f& v1,
                           const Vector3f& v2, const Vector3f& orig,
                           const Vector3f& dir, float& tnear, float& u, float& v)
 {
-    Vector3f edge1 = v1 - v0;
-    Vector3f edge2 = v2 - v0;
-    Vector3f pvec = crossProduct(dir, edge2);
-    float det = dotProduct(edge1, pvec);
+    auto edge1 = v1 - v0;
+    auto edge2 = v2 - v0;
+    auto pvec = crossProduct(dir, edge2);
+    auto det = dotProduct(edge1, pvec);
     if (det == 0 || det < 0)
         return false;
 
-    Vector3f tvec = orig - v0;
+    auto tvec = orig - v0;
     u = dotProduct(tvec, pvec);
     if (u < 0 || u > det)
         return false;
 
-    Vector3f qvec = crossProduct(tvec, edge1);
+    auto qvec = crossProduct(tvec, edge1);
     v = dotProduct(dir, qvec);
     if (v < 0 || u + v > det)
         return false;
 
-    float invDet = 1 / det;
-
+    auto invDet = 1.0f / det;
     tnear = dotProduct(edge2, qvec) * invDet;
     u *= invDet;
     v *= invDet;
@@ -60,29 +59,35 @@ public:
     }
 
     bool intersect(const Ray& ray) override;
+
     bool intersect(const Ray& ray, float& tnear,
                    uint32_t& index) const override;
+
     Intersection getIntersection(Ray ray) override;
+
     void getSurfaceProperties(const Vector3f& P, const Vector3f& I,
                               const uint32_t& index, const Vector2f& uv,
                               Vector3f& N, Vector2f& st) const override
     {
         N = normal;
-        //        throw std::runtime_error("triangle::getSurfaceProperties not
-        //        implemented.");
     }
+
     Vector3f evalDiffuseColor(const Vector2f&) const override;
+
     Bounds3 getBounds() override;
-    void Sample(Intersection &pos, float &pdf){
+
+    void Sample(Intersection& pos, float& pdf) {
         float x = std::sqrt(get_random_float()), y = get_random_float();
         pos.coords = v0 * (1.0f - x) + v1 * (x * (1.0f - y)) + v2 * (x * y);
         pos.normal = this->normal;
         pdf = 1.0f / area;
     }
-    float getArea(){
+
+    float getArea() {
         return area;
     }
-    bool hasEmit(){
+
+    bool hasEmit() {
         return m->hasEmission();
     }
 };
@@ -199,9 +204,11 @@ public:
         bvh->Sample(pos, pdf);
         pos.emit = m->getEmission();
     }
+
     float getArea(){
         return area;
     }
+
     bool hasEmit(){
         return m->hasEmission();
     }
@@ -232,27 +239,22 @@ inline Bounds3 Triangle::getBounds() { return Union(Bounds3(v0, v1), v2); }
 inline Intersection Triangle::getIntersection(Ray ray)
 {
     Intersection inter;
+    if (dotProduct(ray.direction, normal) > 0) return inter;
 
-    if (dotProduct(ray.direction, normal) > 0)
-        return inter;
-    double u, v, t_tmp = 0;
-    Vector3f pvec = crossProduct(ray.direction, e2);
-    double det = dotProduct(e1, pvec);
-    if (fabs(det) < std::numeric_limits<float>::epsilon())
-        return inter;
+    auto pvec = crossProduct(ray.direction, e2);
+    auto det = dotProduct(e1, pvec);
+    if (fabs(det) < std::numeric_limits<float>::epsilon()) return inter;
 
-    double det_inv = 1. / det;
-    Vector3f tvec = ray.origin - v0;
-    u = dotProduct(tvec, pvec) * det_inv;
-    if (u < 0 || u > 1)
-        return inter;
-    Vector3f qvec = crossProduct(tvec, e1);
-    v = dotProduct(ray.direction, qvec) * det_inv;
-    if (v < 0 || u + v > 1)
-        return inter;
-    t_tmp = dotProduct(e2, qvec) * det_inv;
+    auto det_inv = 1.f / det;
+    auto tvec = ray.origin - v0;
+    auto u = dotProduct(tvec, pvec) * det_inv;
+    if (u < 0 || u > 1) return inter;
 
-    // TODO find ray triangle intersection
+    auto qvec = crossProduct(tvec, e1);
+    auto v = dotProduct(ray.direction, qvec) * det_inv;
+    if (v < 0 || u + v > 1) return inter;
+
+    auto t_tmp = dotProduct(e2, qvec) * det_inv;
     if (t_tmp < 0) return inter;
 
     inter.happened = true;
@@ -266,5 +268,5 @@ inline Intersection Triangle::getIntersection(Ray ray)
 
 inline Vector3f Triangle::evalDiffuseColor(const Vector2f&) const
 {
-    return Vector3f(0.5, 0.5, 0.5);
+    return Vector3f(0.5f, 0.5f, 0.5f);
 }

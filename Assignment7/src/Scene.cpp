@@ -59,8 +59,6 @@ bool Scene::trace(
 // Implementation of Path Tracing
 Vector3f Scene::castRay(const Ray &ray, int depth) const
 {
-    // TO DO Implement Path Tracing Algorithm here
-
     auto hit = intersect(ray);
     if (!hit.happened) {
         return { 0, 0, 0 };
@@ -83,13 +81,14 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
     auto vecDirect = hitDirect.coords - hit.coords;
     auto dirDirect = vecDirect.normalized();
     auto disDirect = vecDirect.norm();
-    if (disDirect - intersect(Ray(hit.coords, dirDirect)).distance < std::numeric_limits<float>::epsilon()) {
+    auto disShadow = intersect(Ray(hit.coords, dirDirect)).distance;
+    if ((disDirect - disShadow) < std::numeric_limits<float>::epsilon()) {
         lightDirect += hitDirect.emit
             * hit.m->eval(ray.direction, dirDirect, hit.normal)
             * dotProduct(dirDirect, hit.normal)
             * dotProduct(-dirDirect, hitDirect.normal)
-            / (disDirect * disDirect)
-            / pdfDirect;
+            * (1 / disDirect / disDirect)
+            * (1 / pdfDirect);
     }
     
     if (get_random_float() > RussianRoulette) {
@@ -97,14 +96,12 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
     }
 
     // Indirect Light
-    Vector3f lightIndirect{ 0, 0, 0 };
     auto dirIndirect = hit.m->sample(ray.direction, hit.normal).normalized();
-    Ray rayIndirect(hit.coords, dirIndirect);
-    lightIndirect += castRay(rayIndirect, depth + 1)
+    auto lightIndirect = castRay(Ray(hit.coords, dirIndirect), depth + 1)
         * hit.m->eval(ray.direction, dirIndirect, hit.normal)
         * dotProduct(dirIndirect, hit.normal)
-        / hit.m->pdf(ray.direction, dirIndirect, hit.normal)
-        / RussianRoulette;
+        * (1 / RussianRoulette)
+        * (1 / hit.m->pdf(ray.direction, dirIndirect, hit.normal));
 
     return lightDirect + lightIndirect;
 }

@@ -33,6 +33,7 @@ BVHBuildNode* BVHAccel::recursiveBuild(std::vector<Object*> objects)
     Bounds3 bounds;
     for (int i = 0; i < objects.size(); ++i)
         bounds = Union(bounds, objects[i]->getBounds());
+
     if (objects.size() == 1) {
         // Create leaf _BVHBuildNode_
         node->bounds = objects[0]->getBounds();
@@ -107,12 +108,12 @@ Intersection BVHAccel::Intersect(const Ray& ray) const
 
 Intersection BVHAccel::getIntersection(BVHBuildNode* node, const Ray& ray) const
 {
-    // TODO Traverse the BVH to find intersection
     if (!node || !node->bounds.IntersectP(ray, ray.direction_inv, { 0,0,0 })) {
         return Intersection();
     }
 
-    if (!node->left && !node->right && node->object) {
+    if (node->object) {
+        // Only leaf have object
         return node->object->getIntersection(ray);
     }
 
